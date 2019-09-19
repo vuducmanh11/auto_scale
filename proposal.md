@@ -1,4 +1,4 @@
-## Đề tài: Auto Scale thông qua giám sát tập trung trong hệ thống Contrail (Tungsten Fabric) Cloud kết hợp OpenStack
+## Đề tài: Autoscaling using Prometheus, Faythe, Heat in Contrail Cloud Integration with OpenStack System
 
 ## Hiện trạng
 
@@ -52,15 +52,17 @@
 
 ```
 
-- Cài đặt chạy các exporter trên workload cần giám sát
+- Cài đặt, running exporter trên các thực thể cần giám sát.
 
-- Prometheus server scrape metric từ các exporter chạy trong các Instance (VM, service instance)
+- Prometheus server scrape metric từ các exporter chạy trong các instance (VM, service instance).
 
-- Prometheus server đánh giá metric với các rule đã định sẵn
+- Prometheus server đánh giá metric dựa trên các rule đã định sẵn.
 
-- Prometheus server gửi alert tới Prometheus alertmanager
+- Prometheus server gửi alert tới Prometheus alertmanager.
 
-- Prometheus alertmanager gửi POST Scale request tới Heat Scaling policy với webhook configuration.
+- Prometheus alertmanager gửi POST scale request tới Heat Scaling policy với webhook configuration.
+
+- Heat tạo ra các template và thực hiện scalce instance (VM, service instance).
 
 #### Visualize
 
@@ -68,5 +70,5 @@
 
 #### Future Works
 
-- Monitor thiết bị vật lý, visualize topology, flow: enable SNMP, LLDP, sFlow
+- Monitor thiết bị vật lý, visualize topology, capture flow: enable SNMP, LLDP, sFlow
 
