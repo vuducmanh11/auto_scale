@@ -21,9 +21,11 @@
 
 ![sfc scale](images/sfc_scale_0.png)
 
-## Giải pháp 
+## Xây dựng hệ thống 
 
-- Sử dụng Prometheus server, prometheus alertmanager, prometheus exporter thay cho Telemetry để thực hiện monitor và scale với nhiều thông số hơn.
+- Monitor: sử dụng công cụ monitor mã nguồn mở khác cho phép monitor được nhiều thông số từ các instances
+- Scaling: sử dụng Heat- OpenStack Orchestration 
+( Sử dụng Prometheus server, prometheus alertmanager, prometheus exporter thay cho Telemetry để thực hiện monitor và scale với nhiều thông số hơn )
 
 ```
 
@@ -52,21 +54,56 @@
 
 ```
 
-- Cài đặt, running exporter trên các thực thể cần giám sát.
+### Chức năng của hệ thống
 
-- Prometheus server scrape metric từ các exporter chạy trong các instance (VM, service instance).
+- Monitor network mức overlay
+  - virtual network
+  - virtual machine
+  - virtual interface
+  - service instances
+- Visualize các thông tin thu thập được qua giao diện
+- Alerting
+  - gửi cảnh báo khi hệ thống có lỗi dựa theo các rule do người quản trị đặt ra
+  - gửi mail resolved khi hệ thống đã khắc phục được lỗi
+- Autoscaling 
+  - tự động scale instance (VM, service instance) theo các file rule được đặt ra dựa vào thông số đã monitor được
 
-- Prometheus server đánh giá metric dựa trên các rule đã định sẵn.
+### Giải pháp
 
-- Prometheus server gửi alert tới Prometheus alertmanager.
+#### Monitor
 
-- Prometheus alertmanager gửi POST scale request tới Heat Scaling policy với webhook configuration.
+- Hiện nay có nhiều công cụ hỗ trợ monitor như: Zabbix, Datadog, Prometheus,.. Em chọn prometheus vì những ưu điểm sau:
+  - prometheus là phần mềm mã nguồn mở, có cộng đồng đủ lớn
+  - prometheus được nhiều công ty tại Việt Nam sử dụng
 
-- Heat tạo ra các template và thực hiện scalce instance (VM, service instance).
+Hiện tại Prometheus đã hỗ trợ một số exporter cho OpenStack chưa hỗ trợ Tungsten Fabric
+--> Cần implement các exporter để lấy metric từ các object của Tungsten Fabric: vrouter, virtual network, virtual machine interface, service instance
 
 #### Visualize
 
-- Sử dụng grafana vẽ giao diện dựa theo các thông số monitor được.
+- Sử dụng grafana để vẽ đồ thị, bảng,.. từ các metric đã lấy được từ prometheus thông qua ngôn ngữ PromQL
+
+#### Alerting
+
+- Prometheus có hỗ trợ alertmanager cho việc gửi cảnh báo tới quản trị dựa theo các file alert rule được định nghĩa. Cảnh báo sẽ được gửi tới một mailproxy. 
+- Lựa chọn mailproxy
+  + build mailproxy qua docker
+  + sử dụng mailproxy của Google
+  + sử dụng mailproxy của Viettel
+
+#### AutoScaling
+
+- Kiến trúc tổng quan các thành phần để thực hiện việc autoscale
+
+![](images/scale.jpeg)
+
+Autoscaling gồm 3 bước:
+- Metering
+- Alarm
+- Scale
+
+OpenStack Telemetry ứng dụng trong việc Metering và Alarm nhưng hiện tại gặp nhiều vấn đề. Đề tài của em sử dụng một cách tiếp cận mới khi thay thế OpenStack Telemetry bởi Prometheus stack, cùng việc sử dụng Faythe và Orchestration Heat.
+- Mặc định, Alertmanager webhook config không hỗ trợ HTTP headers, trong khi đó Heat Scaling Policy signal url yêu cầu X-Auth-Token trong header, dẫn đến alertmanager không thể giao tiếp trực tiếp với Heat Scaling Policy. Việc implement project Faythe cho phép nhận alert từ Alertmanager webhook. Khi nhận được alert, Faythe sẽ gửi trigger scale request tới Heat Scaling Policy. Sau đó Heat sẽ sử dụng các template đã khai báo để scale instance theo yêu cầu.
 
 #### Future Works
 
